@@ -40,7 +40,7 @@ export const draw = (
     x: fieldSize.width / 2,
     y: fieldSize.height / 2,
   },
-  paddle = {
+  paddle1 = {
     height: 20,
     width: 100,
     x: fieldSize.width / 2,
@@ -49,5 +49,5 @@ export const draw = (
 ) => {
   drawField();
   drawBall(ballCoordinates.x, ballCoordinates.y);
-  drawPaddle(paddle);
+  drawPaddle(paddle1);
 };
