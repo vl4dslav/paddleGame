@@ -45,9 +45,16 @@ export const draw = (
     width: 100,
     x: fieldSize.width / 2,
     y: fieldSize.height - 20,
+  },
+  paddle2 = {
+    height: 20,
+    width: 100,
+    x: fieldSize.width / 2,
+    y: 20,
   }
 ) => {
   drawField();
   drawBall(ballCoordinates.x, ballCoordinates.y);
   drawPaddle(paddle1);
+  drawPaddle(paddle2);
 };

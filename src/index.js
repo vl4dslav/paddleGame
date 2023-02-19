@@ -2,6 +2,25 @@ import { fromEvent, interval, map } from "rxjs";
 import { draw, fieldSize } from "./draw";
 import "./styles/main.scss";
 
+const socket = io();
+const paddles = {
+  bottomPaddle: {
+    me: true,
+    info: {},
+  },
+  topPaddle: {
+    me: false,
+    info: {},
+  },
+};
+socket.emit("positioning", "bottom");
+socket.on("positioning", (position) => {
+  if (position === "top") {
+    paddles.bottomPaddle.me = false;
+    paddles.topPaddle.me = true;
+  }
+});
+
 const plr1 = document.querySelector(".plr1");
 const plr2 = document.querySelector(".plr2");
 
@@ -21,7 +40,13 @@ const defaultValues = {
     x: ((Math.random() * 2 - 1) * 250) / fps,
     y: 230 / fps,
   },
-  paddle: {
+  paddleTop: {
+    height: 20,
+    width: 100,
+    x: fieldSize.width / 2,
+    y: 20,
+  },
+  paddleBottom: {
     height: 20,
     width: 100,
     x: fieldSize.width / 2,
@@ -31,46 +56,48 @@ const defaultValues = {
 
 const ballCoordinates = Object.assign({}, defaultValues.ballCoordinates);
 const ballSpeed = Object.assign({}, defaultValues.ballSpeed);
-const paddle = Object.assign({}, defaultValues.paddle);
+// const paddle = Object.assign({}, defaultValues.paddle);
+Object.assign(paddles.topPaddle.info, defaultValues.paddleTop);
+Object.assign(paddles.bottomPaddle.info, defaultValues.paddleBottom);
 
 const refresh = () => {
   defaultValues.ballSpeed.x = ((Math.random() * 2 - 1) * 250) / fps;
   Object.assign(ballCoordinates, defaultValues.ballCoordinates);
   Object.assign(ballSpeed, defaultValues.ballSpeed);
-  Object.assign(paddle, defaultValues.paddle);
+  // Object.assign(paddle, defaultValues.paddle);
+  Object.assign(paddles.topPaddle.info, defaultValues.paddleTop);
+  Object.assign(paddles.bottomPaddle.info, defaultValues.paddleBottom);
 };
-// // {
-// // x: fieldSize.width / 2,
-// // y: fieldSize.height / 2,
-// };
-
-// {
-//   x: ((Math.random() * 2 - 1) * 250) / fps,
-//   y: 230 / fps,
-// };
-
-// {
-//   height: 20,
-//   width: 100,
-//   x: fieldSize.width / 2,
-//   y: fieldSize.height - 20,
-// };
 
 const paddleSpeed = 800 / fps;
 
-const ballInPaddle = () => {
+const ballInBotPaddle = () => {
+  const bPaddle = paddles.bottomPaddle.info;
   if (
-    paddle.x + paddle.width / 2 > ballCoordinates.x &&
-    paddle.x - paddle.width / 2 < ballCoordinates.x
+    bPaddle.x + bPaddle.width / 2 > ballCoordinates.x &&
+    bPaddle.x - bPaddle.width / 2 < ballCoordinates.x
   )
-    return ballCoordinates.y > paddle.y - paddle.height / 2 &&
-      ballCoordinates.y < paddle.y + paddle.height / 2
+    return ballCoordinates.y > bPaddle.y - bPaddle.height / 2 &&
+      ballCoordinates.y < bPaddle.y + bPaddle.height / 2
       ? true
       : false;
   return false;
 };
 
-const accelerationPart = () => {
+const ballInTopPaddle = () => {
+  const tPaddle = paddles.topPaddle.info;
+  if (
+    tPaddle.x + tPaddle.width / 2 > ballCoordinates.x &&
+    tPaddle.x - tPaddle.width / 2 < ballCoordinates.x
+  )
+    return ballCoordinates.y > tPaddle.y - tPaddle.height / 2 &&
+      ballCoordinates.y < tPaddle.y + tPaddle.height / 2
+      ? true
+      : false;
+  return false;
+};
+
+const accelerationPart = (paddle) => {
   const part = paddle.width / 5;
   switch (Math.floor((paddle.x - ballCoordinates.x) / part)) {
     case -1:
@@ -132,10 +159,38 @@ fromEvent(document, "keyup")
   });
 
 interval(1000 / fps).subscribe(() => {
-  if (paddleTransition.makeTransition) paddle.x += paddleTransition.value;
-  draw(ballCoordinates, paddle);
+  let ruleTheBall = false;
+  let myPaddle, opponentPaddle;
+  if (paddles.bottomPaddle.me) {
+    myPaddle = paddles.bottomPaddle.info;
+    opponentPaddle = paddles.topPaddle.info;
+    ruleTheBall = true;
+  } else {
+    myPaddle = paddles.topPaddle.info;
+    opponentPaddle = paddles.bottomPaddle.info;
+  }
+  if (paddleTransition.makeTransition) myPaddle.x += paddleTransition.value;
+  socket.emit("newPosition", `${myPaddle.x}`);
+  socket.on("newPosition", (opponentX) => {
+    opponentPaddle.x = +opponentX;
+  });
+  draw(ballCoordinates, myPaddle, opponentPaddle);
+  if (ruleTheBall) {
+    socket.emit(
+      "ball",
+      `${ballCoordinates.x} ${ballCoordinates.y} ${ballSpeed.x} ${ballSpeed.y}`
+    );
+  } else {
+    socket.on("ball", (msg) => {
+      ballCoordinates.x = +msg.split(" ")[0];
+      ballCoordinates.y = +msg.split(" ")[1];
+      ballSpeed.x = +msg.split(" ")[2];
+      ballSpeed.y = +msg.split(" ")[3];
+    });
+  }
   if (ballCoordinates.x > fieldSize.width || ballCoordinates.x < 0)
     ballSpeed.x *= -1;
+
   if (ballCoordinates.y > fieldSize.height || ballCoordinates.y < 0) {
     if (ballCoordinates.y > fieldSize.height) points.plr1++;
     if (ballCoordinates.y < 0) points.plr2++;
@@ -143,10 +198,13 @@ interval(1000 / fps).subscribe(() => {
     plr2.textContent = points.plr2;
     refresh();
   }
-
   // ballSpeed.y *= -1;
-  if (ballInPaddle()) {
-    accelerationPart();
+  if (ballInTopPaddle()) {
+    accelerationPart(paddles.topPaddle.info);
+    ballSpeed.y *= -1;
+  }
+  if (ballInBotPaddle()) {
+    accelerationPart(paddles.bottomPaddle.info);
     ballSpeed.y *= -1;
   }
   ballCoordinates.x += ballSpeed.x;
