@@ -8,7 +8,7 @@ const radius = 10;
 const canvas = document.querySelector("canvas");
 canvas.width = fieldSize.width;
 canvas.height = fieldSize.height;
-canvas.style.backgroundColor = "black";
+// canvas.style.backgroundColor = "black";
 const ctx = canvas.getContext("2d");
 
 const drawBall = (x, y) => {

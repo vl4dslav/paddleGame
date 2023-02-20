@@ -1,3 +1,73 @@
+@mixin flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin polygon {
+  clip-path: polygon(10% 0%, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+}
+
+html {
+  font-size: 62.5%;
+}
+
 div {
-  background-color: antiquewhite;
+  font-size: 5rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 1.5rem 0;
+
+  &.points {
+    @include flex;
+    gap: 4rem;
+  }
+}
+
+.canvas {
+  @include flex;
+}
+
+ul.game-list {
+  list-style-type: none;
+  font-size: 3rem;
+  font-weight: 600;
+  line-height: 2.2;
+  padding: 2rem;
+  background-color: #aaa;
+  text-align: center;
+  width: 40rem;
+  margin: 0 auto;
+  @include polygon;
+
+  &:hover {
+    cursor: pointer;
+    background-color: darken($color: #aaa, $amount: 10%);
+  }
+
+  li:hover {
+    @include polygon;
+    background-color: darken($color: #aaa, $amount: 30%);
+    font-weight: 800;
+  }
+}
+
+form {
+  margin: 5rem auto;
+  width: 40rem;
+  @include flex;
+
+  input {
+    width: 85%;
+    height: 3rem;
+    font-size: 2rem;
+  }
+
+  button {
+    @include flex;
+    cursor: pointer;
+    font-size: 3rem;
+    height: 3.5rem;
+    width: 10%;
+  }
 }

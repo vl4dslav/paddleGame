@@ -8,11 +8,18 @@
   </head>
   <body>
     <div class="title">Paddle game</div>
+    <ul class="game-list"></ul>
+    <form id="game-form">
+      <input type="text" name="game-name" id="game-name" />
+      <button>+</button>
+    </form>
     <div class="points">
-      <div class="plr1"></div>
-      <div class="plr2"></div>
+      <!-- <div class="plr1">0</div>
+      <div class="plr2">0</div> -->
     </div>
-    <canvas></canvas>
+    <div class="canvas">
+      <canvas></canvas>
+    </div>
     <script src="/socket.io/socket.io.js"></script>
   </body>
 </html>
